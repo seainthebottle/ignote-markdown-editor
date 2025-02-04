@@ -26,7 +26,7 @@ export default class IgnoteMarkdownEditor {
 
         const fixedHeightEditor = EditorView.theme({
             "&.cm-editor": {height: "100%"},
-            ".cm-scroller": {overflow: "scroll"}
+            ".cm-scroller": {overflow: "auto"}
         });
 
         // CodeMirror 초기화
@@ -45,7 +45,12 @@ export default class IgnoteMarkdownEditor {
                 crosshairCursor(),
                 highlightActiveLine(),
                 highlightSelectionMatches(),
-                markdown({ base: markdownLanguage })
+                markdown({ base: markdownLanguage }),
+                keymap.of([
+                    ...defaultKeymap,
+                    ...searchKeymap,
+                    ...historyKeymap
+                ])
             ]
         });
 
@@ -53,27 +58,6 @@ export default class IgnoteMarkdownEditor {
             state,
             parent: this.editorContainer
         });
-
-        /*this.editor = new EditorView({
-            doc: initialContent,
-            extensions: [
-                //basicSetup,
-                nord,
-                baseFont,
-                fixedHeightEditor,
-                EditorView.lineWrapping,
-                lineNumbers(),
-                //highlightActiveLineGutter(),
-                history(),
-                //drawSelection(),
-                dropCursor(),
-                crosshairCursor(),
-                highlightActiveLine(),
-                highlightSelectionMatches(),
-                markdown({ base: markdownLanguage })
-            ],
-            parent: this.editorContainer
-        });*/
 
         // Markdown 변경 감지
         this.editor.dispatch({
