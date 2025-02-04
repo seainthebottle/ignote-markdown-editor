@@ -1,15 +1,14 @@
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { EditorView } from "@codemirror/basic-setup";
-import { keymap, drawSelection, highlightActiveLine, dropCursor,
+import { nord } from "cm6-theme-nord";
+import { EditorView, keymap, drawSelection, highlightActiveLine, dropCursor,
     rectangularSelection, crosshairCursor,
     lineNumbers, highlightActiveLineGutter } from "@codemirror/view"
 import {Compartment, StateEffect, EditorState} from "@codemirror/state"
+import {defaultKeymap, history, historyKeymap} from "@codemirror/commands"
 import {searchKeymap, highlightSelectionMatches} from "@codemirror/search"
-import "style-mod";
-
-import MarkdownIt from "https://cdn.skypack.dev/markdown-it";
+import MarkdownIt from "markdown-it";
 
 export default class IgnoteMarkdownEditor {
     constructor(editorContainer, previewContainer, initialContent = "") {
@@ -17,7 +16,6 @@ export default class IgnoteMarkdownEditor {
         //this.previewContainer = previewContainer;
         this.md = new MarkdownIt();
 
-        const container = document.getElementById('PageEditorContainer')
         const baseFont = EditorView.theme({
             ".cm-content": { 
                 fontSize: window.getComputedStyle(this.editorContainer).getPropertyValue('font-size'),
@@ -26,15 +24,16 @@ export default class IgnoteMarkdownEditor {
             }
         });
 
-
         const fixedHeightEditor = EditorView.theme({
             "&.cm-editor": {height: "100%"},
-            ".cm-scroller": {overflow: "auto"}
+            ".cm-scroller": {overflow: "scroll"}
         });
 
         // CodeMirror 초기화
-        /*let state = EditorState.create({
+        const state = EditorState.create({
+            doc: initialContent,
             extensions: [
+                oneDark,
                 baseFont,
                 fixedHeightEditor,
                 EditorView.lineWrapping,
@@ -47,25 +46,25 @@ export default class IgnoteMarkdownEditor {
                 highlightActiveLine(),
                 highlightSelectionMatches(),
                 markdown({ base: markdownLanguage })
-            ],
-            doc: initialContent
+            ]
         });
 
         this.editor = new EditorView({
             state,
             parent: this.editorContainer
-        });*/
+        });
 
-        this.editor = new EditorView({
+        /*this.editor = new EditorView({
             doc: initialContent,
             extensions: [
                 //basicSetup,
+                nord,
                 baseFont,
                 fixedHeightEditor,
                 EditorView.lineWrapping,
                 lineNumbers(),
                 //highlightActiveLineGutter(),
-                //history(),
+                history(),
                 //drawSelection(),
                 dropCursor(),
                 crosshairCursor(),
@@ -74,7 +73,7 @@ export default class IgnoteMarkdownEditor {
                 markdown({ base: markdownLanguage })
             ],
             parent: this.editorContainer
-        });
+        });*/
 
         // Markdown 변경 감지
         this.editor.dispatch({
