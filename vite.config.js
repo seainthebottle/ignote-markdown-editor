@@ -16,7 +16,5 @@ export default defineConfig({
         dir: "modules"
       }
     }
-  },
-  optimizeDeps: {
-    exclude: ["@codemirror/state"] }
+  }
 });
