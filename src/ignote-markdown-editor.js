@@ -34,7 +34,7 @@ export default class IgnoteMarkdownEditor {
                 this.broadcastChannel.postMessage(sendData);
             }
         });
-        
+
 
         const fixedHeightEditor = EditorView.theme({
             "&.cm-editor": { height: "100%" },
@@ -42,7 +42,7 @@ export default class IgnoteMarkdownEditor {
         });
 
         // CodeMirror 초기화
-        const state = EditorState.create({
+        this.state = EditorState.create({
             doc: initialContent,
             extensions: [
                 oneDark,
@@ -67,7 +67,7 @@ export default class IgnoteMarkdownEditor {
         });
 
         this.editor = new EditorView({
-            state,
+            state: this.state,
             parent: this.editorContainer
         });
 
@@ -97,6 +97,42 @@ export default class IgnoteMarkdownEditor {
             effects: IgnoreUpdateEffect.of(null) // StateEffect 추가(업데이트 이벤트 발생을 막기 위해)
         });
         this.updatePreview();
+    }
+
+    // Insert markdown text into the editor at current cursor position
+    insertMarkdownText(markdownText) {
+        let selection = this.editor.state.selection;
+        let curFrom = selection.main.from;
+        let curTo = selection.main.to;
+        let newCursorPosition = curFrom + markdownText.length; // 커서 위치 조정
+    
+        // 트랜잭션 생성 후 dispatch 실행
+        this.editor.dispatch({
+            changes: { from: curFrom, to: curTo, insert: markdownText },
+            selection: { anchor: newCursorPosition, head: newCursorPosition }
+        });
+    
+        this.updatePreview();
+
+        /*// 현재 커서 위치에 덮어쓰기를 한다.
+        var selection = this.state.selection;
+        var curFrom = selection.main.from;
+        var curTo = selection.main.to;
+        var update = this.state.update(
+            { changes: { from: curFrom, to: curTo, insert: markdownText } },
+            { selection: { anchor: newCursorPosition, head: newCursorPosition } }
+        );
+
+        // 커서를 새로 교체한 text의 끝에 위치시킨다. 그래야 순서가 올바르게 삽입된다.
+        var newCursorPosition = curTo + markdownText.length;
+        var move = { selection: { anchor: newCursorPosition, head: newCursorPosition } };
+
+        // 위의 transaction 들을 반영한다.
+        this.editor.dispatch(update);
+        this.editor.dispatch(move);
+
+        // preview에도 반영한다.
+        //if(this.previewEnabled) this.rmdePreview.renderMarkdownTextToPreview(this);*/
     }
 
     // 에디터 이벤트 리스너 추가
