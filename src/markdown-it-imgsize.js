@@ -35,8 +35,6 @@ export default function markdownItImageSize(md) {
         if (state.src.charCodeAt(state.pos) !== 0x21/* ! */) { return false; }
         if (state.src.charCodeAt(state.pos + 1) !== 0x5B/* [ */) { return false; }
 
-        console.log(state.src)
-
         labelStart = state.pos + 2;
         labelEnd = md.helpers.parseLinkLabel(state, state.pos + 1, false);
 
