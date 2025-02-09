@@ -11,15 +11,47 @@ import { Compartment, StateEffect, EditorState } from "@codemirror/state"
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search"
 import MarkdownIt from "markdown-it";
+import mdiFootNote from "markdown-it-footnote";
+import mdiAbbr from "markdown-it-abbr";
+import mdiMark from "markdown-it-mark";
+import mdiDeflist from "markdown-it-deflist";
+import mdiTasks from "markdown-it-tasks";
+import mdiSup from "markdown-it-sup";
+import mdiSub from "markdown-it-sub";
+//import mdiLinenumbers from "markdown-it-inject-linenumbers";
+
+import markdownItImageSize from "./markdown-it-imgsize";
 
 // 🚀 StateEffect를 전역에서 정의 (클래스 외부에서 한 번만 선언)
 const IgnoreUpdateEffect = StateEffect.define();
 
 export default class IgnoteMarkdownEditor {
     constructor(editorContainer, previewContainer, initialContent = "") {
+
         this.editorContainer = editorContainer;
         //this.previewContainer = previewContainer;
-        this.md = new MarkdownIt();
+
+        this.md = new MarkdownIt({
+            html: true,
+            breaks: true,
+            linkify: true,
+            typographer: true,
+            html: true,
+            xhtmlOut: false,
+            breaks: false,
+            linkify: true,
+            typographer: true
+        })
+            .use(mdiFootNote)
+            .use(mdiAbbr)
+            .use(mdiMark)
+            .use(mdiDeflist)
+            .use(mdiTasks, { enabled: true })
+            .use(mdiSup)
+            .use(mdiSub)
+            .use(markdownItImageSize)
+        //.use(mdiLinenumbers);
+
         this.broadcastChannel = new BroadcastChannel("ignote_channel");
 
         // updateListener: 특정 Effect가 없는 경우에만 실행
@@ -34,7 +66,7 @@ export default class IgnoteMarkdownEditor {
                 this.broadcastChannel.postMessage(sendData);
             }
         });
-        
+
 
         const fixedHeightEditor = EditorView.theme({
             "&.cm-editor": { height: "100%" },
