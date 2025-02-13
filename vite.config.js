@@ -1,6 +1,12 @@
 import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+import tsconfig from "./tsconfig.json";  
 
 export default defineConfig({
+  plugins: [tsconfigPaths()],
+  resolve: {
+    extensions: [".cjs", ".js"] 
+  },
   build: {
     lib: {
       entry: "src/index.js",  // 엔트리 파일
@@ -15,6 +21,9 @@ export default defineConfig({
         globals: {},
         dir: "modules"
       }
+    },
+    esbuild: {
+      tsconfigRaw: tsconfig,  // tsconfig.json 직접 적용
     }
   }
 });

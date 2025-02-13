@@ -3,17 +3,18 @@
 import { oneDark } from "@codemirror/theme-one-dark";
 import { nord } from "cm6-theme-nord";
 import {
-    EditorView, keymap, drawSelection, highlightActiveLine, dropCursor,
+    EditorView, keymap, highlightActiveLine, dropCursor,
     rectangularSelection, crosshairCursor,
-    lineNumbers, highlightActiveLineGutter
+    lineNumbers
 } from "@codemirror/view"
 import { Compartment, StateEffect, EditorState } from "@codemirror/state"
 import { defaultHighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language"
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search"
-import {autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap} from "@codemirror/autocomplete"
-import { markdown } from "./lib/lang-markdown";
-import { GFM, Superscript, Subscript, Emoji } from "./lib/markdown";
+import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete"
+import { lintKeymap } from "@codemirror/lint"
+import { markdown } from "@codemirror/lang-markdown";
+import { GFM, Superscript, Subscript, Emoji } from "@lezer/markdown";
 import { mdpTexInline, mdpTexBlock, mdpMark, mdpFootnote } from "./lib/additional-markdown-parser";
 import MarkdownIt from "markdown-it";
 import mdiFootNote from "markdown-it-footnote";
@@ -25,6 +26,8 @@ import mdiSup from "markdown-it-sup";
 import mdiSub from "markdown-it-sub";
 
 import IgmePreview from "./lib/igme-preview";
+import { getCustomTheme } from "./lib/theme-custom";
+
 
 import markdownItImageSize from "./lib/markdown-it-imgsize";
 import markdownitMathjax from "./lib/markdown-it-mathjax";
@@ -119,45 +122,69 @@ export default class IgnoteMarkdownEditor {
             //scroll(event, view) { self.onScroll(event, view, self) }
         });
 
+        var themeCompartment = new Compartment();
+        var theme = {
+            style: {
+                foreground: "#f4f4f4",
+                background: "#202020",
+                highlightBackground: "#222222",
+                gutterBackground: "#161b22"
+            },
+            highlight: {
+                keyword: {color: "#c678dd"}, 
+                strong: {fontWeight: "bold"}, 
+                emphasis: {fontStyle: "italic"}, 
+                strikethrough: {textDecoration: "line-through"}, 
+                link: {color: "#7d8799", textDecoration: "underline"},
+                heading: {fontWeight: "bold", color: "#e06c75"},
+                processingInstruction: {color: "#98c379"},
+                tex: {color: "#61afef"}
+            },
+            isDark: true
+        }
+        let baseTheme = getCustomTheme(theme);
+
+        const extensions = [
+            themeCompartment.of(baseTheme),
+            fixedHeightEditor,
+            EditorView.lineWrapping,
+            (typeof MathJax !== "undefined") ? 
+                markdown({extensions: [...GFM, Superscript, Subscript, Emoji, mdpMark, mdpFootnote, mdpTexInline, mdpTexBlock] })
+              : markdown({extensions: [...GFM, Superscript, Subscript, Emoji, mdpMark, mdpFootnote] }),
+            eventHandler,
+            domeventhandler,
+            lineNumbers(),
+            //highlightActiveLineGutter(),
+            history(),
+            //drawSelection(),
+            dropCursor(),
+            EditorState.allowMultipleSelections.of(true),
+            indentOnInput(),
+            syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+            bracketMatching(),
+            closeBrackets(),
+            autocompletion(),
+            rectangularSelection(),
+            crosshairCursor(),
+            highlightActiveLine(),
+            highlightSelectionMatches(),
+            //markdown({ base: markdownLanguage }),
+            keymap.of([
+                ...closeBracketsKeymap,
+                ...defaultKeymap,
+                ...searchKeymap,
+                ...historyKeymap,
+                ...foldKeymap,
+                ...completionKeymap,
+                ...lintKeymap
+            ]),
+            updateListener
+        ].filter(Boolean);
+
         // CodeMirror 초기화
         this.state = EditorState.create({
             doc: initialContent,
-            extensions: [
-                oneDark,
-                fixedHeightEditor,
-                EditorView.lineWrapping,
-                (typeof MathJax !== "undefined") ? 
-                    markdown({extensions: [...GFM, Superscript, Subscript, Emoji, mdpTexInline, mdpTexBlock, mdpMark, mdpFootnote] }):
-                    markdown({extensions: [...GFM, Superscript, Subscript, Emoji, mdpMark, mdpFootnote] }),
-                eventHandler,
-                domeventhandler,
-                lineNumbers(),
-                //highlightActiveLineGutter(),
-                history(),
-                //drawSelection(),
-                dropCursor(),
-                EditorState.allowMultipleSelections.of(true),
-                indentOnInput(),
-                syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
-                bracketMatching(),
-                closeBrackets(),
-                autocompletion(),
-                rectangularSelection(),
-                crosshairCursor(),
-                highlightActiveLine(),
-                highlightSelectionMatches(),
-                //markdown({ base: markdownLanguage }),
-                keymap.of([
-                    ...closeBracketsKeymap,
-                    ...defaultKeymap,
-                    ...searchKeymap,
-                    ...historyKeymap,
-                    ...foldKeymap,
-                    ...completionKeymap,
-                    ...lintKeymap
-                ]),
-                updateListener
-            ]
+            extensions
         });
 
         this.editor = new EditorView({

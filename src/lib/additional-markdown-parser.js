@@ -1,5 +1,4 @@
-import {InlineContext, BlockContext, MarkdownConfig,
-    LeafBlockParser, LeafBlock, Line, Element, space} from "./markdown"
+import {InlineContext, BlockContext, LeafBlock, Line, Element} from "@lezer/markdown"
 import {tags as t} from "@lezer/highlight";
 
 /**
