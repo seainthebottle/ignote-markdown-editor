@@ -21,6 +21,7 @@ import mdiSub from "markdown-it-sub";
 //import mdiLinenumbers from "markdown-it-inject-linenumbers";
 
 import markdownItImageSize from "./markdown-it-imgsize";
+import markdownitMathjax from "./markdown-it-mathjax";
 
 // 🚀 StateEffect를 전역에서 정의 (클래스 외부에서 한 번만 선언)
 const IgnoreUpdateEffect = StateEffect.define();
@@ -32,15 +33,11 @@ export default class IgnoteMarkdownEditor {
         //this.previewContainer = previewContainer;
 
         this.md = new MarkdownIt({
-            html: true,
-            breaks: true,
-            linkify: true,
-            typographer: true,
-            html: true,
-            xhtmlOut: false,
-            breaks: false,
-            linkify: true,
-            typographer: true
+            html: true,         // HTML을 허용
+            breaks: true,       // \n을 <br>로 변환
+            linkify: true,      // URL 같은 문자열을 링크로 변환
+            typographer: true,  // 일부 관행적 문자열 (C), (R) 등을 특수문자로 치환
+            xhtmlOut: false     // <br>을 <br /> 과 같이 변환. full compatibility를 위한 것으로 불필요 
         })
             .use(mdiFootNote)
             .use(mdiAbbr)
@@ -49,7 +46,12 @@ export default class IgnoteMarkdownEditor {
             .use(mdiTasks, { enabled: true })
             .use(mdiSup)
             .use(mdiSub)
-            .use(markdownItImageSize)
+            .use(markdownItImageSize);
+
+        // $-$, $$-$$를 \(-\), \[-\]과 같은 식으로 바꾼다. (pandoc math규정을 따름)
+        if(typeof MathJax !== "undefined") {
+            this.md.use(markdownitMathjax());
+        }
         //.use(mdiLinenumbers);
 
         this.broadcastChannel = new BroadcastChannel("ignote_channel");
@@ -82,7 +84,7 @@ export default class IgnoteMarkdownEditor {
                 EditorView.lineWrapping,
                 lineNumbers(),
                 //highlightActiveLineGutter(),
-                //history(),
+                history(),
                 //drawSelection(),
                 dropCursor(),
                 crosshairCursor(),
