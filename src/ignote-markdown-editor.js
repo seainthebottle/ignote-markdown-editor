@@ -1,5 +1,5 @@
 
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+//import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { nord } from "cm6-theme-nord";
 import {
@@ -8,8 +8,13 @@ import {
     lineNumbers, highlightActiveLineGutter
 } from "@codemirror/view"
 import { Compartment, StateEffect, EditorState } from "@codemirror/state"
+import { defaultHighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language"
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search"
+import {autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap} from "@codemirror/autocomplete"
+import { markdown } from "./lib/lang-markdown";
+import { GFM, Superscript, Subscript, Emoji } from "./lib/markdown";
+import { mdpTexInline, mdpTexBlock, mdpMark, mdpFootnote } from "./lib/additional-markdown-parser";
 import MarkdownIt from "markdown-it";
 import mdiFootNote from "markdown-it-footnote";
 import mdiAbbr from "markdown-it-abbr";
@@ -19,11 +24,11 @@ import mdiTasks from "markdown-it-tasks";
 import mdiSup from "markdown-it-sup";
 import mdiSub from "markdown-it-sub";
 
-import IgmePreview from "./igme-preview";
+import IgmePreview from "./lib/igme-preview";
 
-import markdownItImageSize from "./markdown-it-imgsize";
-import markdownitMathjax from "./markdown-it-mathjax";
-import markdownItInjectLineNumbers from "./markdown-it-inject-linenumbers";
+import markdownItImageSize from "./lib/markdown-it-imgsize";
+import markdownitMathjax from "./lib/markdown-it-mathjax";
+import markdownItInjectLineNumbers from "./lib/markdown-it-inject-linenumbers";
 
 // 🚀 StateEffect를 전역에서 정의 (클래스 외부에서 한 번만 선언)
 const IgnoreUpdateEffect = StateEffect.define();
@@ -121,6 +126,9 @@ export default class IgnoteMarkdownEditor {
                 oneDark,
                 fixedHeightEditor,
                 EditorView.lineWrapping,
+                (typeof MathJax !== "undefined") ? 
+                    markdown({extensions: [...GFM, Superscript, Subscript, Emoji, mdpTexInline, mdpTexBlock, mdpMark, mdpFootnote] }):
+                    markdown({extensions: [...GFM, Superscript, Subscript, Emoji, mdpMark, mdpFootnote] }),
                 eventHandler,
                 domeventhandler,
                 lineNumbers(),
@@ -128,14 +136,25 @@ export default class IgnoteMarkdownEditor {
                 history(),
                 //drawSelection(),
                 dropCursor(),
+                EditorState.allowMultipleSelections.of(true),
+                indentOnInput(),
+                syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+                bracketMatching(),
+                closeBrackets(),
+                autocompletion(),
+                rectangularSelection(),
                 crosshairCursor(),
                 highlightActiveLine(),
                 highlightSelectionMatches(),
-                markdown({ base: markdownLanguage }),
+                //markdown({ base: markdownLanguage }),
                 keymap.of([
+                    ...closeBracketsKeymap,
                     ...defaultKeymap,
                     ...searchKeymap,
-                    ...historyKeymap
+                    ...historyKeymap,
+                    ...foldKeymap,
+                    ...completionKeymap,
+                    ...lintKeymap
                 ]),
                 updateListener
             ]
