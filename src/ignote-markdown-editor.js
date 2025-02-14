@@ -119,7 +119,7 @@ export default class IgnoteMarkdownEditor {
 
         // 스크롤 이벤트는 여기에서 분배
         let domeventhandler = EditorView.domEventHandlers({
-            //scroll(event, view) { self.onScroll(event, view, self) }
+            scroll: (event, view) => { this.onScroll(event, view) }
         });
 
         var themeCompartment = new Compartment();
@@ -240,8 +240,8 @@ export default class IgnoteMarkdownEditor {
             }
 
             // 방향키로 스크롤될 때에는 preview 스크롤이 스크롤 이벤트에서 처리되지 않고 keyup 이벤트로 처리되게 한다.
-            else if (keyCode === "PageUp" || keyCode === "PageDown" || 
-            keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") this.arrowKeyDown = true;
+            else if (keyCode === "PageUp" || keyCode === "PageDown" ||
+                keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") this.arrowKeyDown = true;
 
             // 엔터키를 입력하면 키입력에 맞추어 스크롤 되게 한다.
             else if (keyCode === "Enter") this.onPasteInput = true;
@@ -250,39 +250,41 @@ export default class IgnoteMarkdownEditor {
         // 키보드로 커서 이동시 스크롤도 함께 되도록 한다.
         this.editorContainer.addEventListener("keyup", function (e) {
             let keyCode = e.key || e.keyCode;
-            if (keyCode === "PageUp" || keyCode === "PageDown" || 
+            if (keyCode === "PageUp" || keyCode === "PageDown" ||
                 keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") {//} ||
                 //(keyCode == "Enter" && this.enterLastLine)) { // 엔터로 내용이 바뀌면 이에 맞추어 업데이트 되는데 필요할 지...
-                this.arrowKeyDown = false;  
-                this.enterLastLine = false;  
+                this.arrowKeyDown = false;
+                this.enterLastLine = false;
                 if (this.previewEnabled) this.scrollPreviewAsTextareaCursor(this);
             }
         });
 
         // 스크롤이 더 되지는 않으나 휠을 돌릴 때 처리를 한다.
         //this.mainEditor.session.on("changeScrollTop", // 이거는 더 스크롤 안되면 호출도 안된다.
-        this.editorContainer.addEventListener("mousewheel", 
+        this.editorContainer.addEventListener("mousewheel",
             (e) => {
                 // 키보드가 움직여 스크롤할때는 따로 처리하므로 휠만 처리한다.
                 if (this.previewEnabled) {
                     var el = this.editorContainer;
-                    var clientBottom = this.editorContainer.getBoundingClientRect().top + window.getComputedStyle(this.editorContainer).height;
+                    var clientBottom = this.editorContainer.getBoundingClientRect().top + parseFloat(window.getComputedStyle(this.editorContainer).height);
+                    //console.log('client - ', this.editorContainer.getBoundingClientRect().top, clientBottom)
                     var docBottom = this.mainEditor.documentTop + this.mainEditor.contentHeight;
+                    //console.log(docBottom)
                     // 첫 행에 이르면 preview도 첫 행으로 보낸다.
-                    if(this.mainEditor.documentTop + this.mainEditor.defaultLineHeight > this.editorContainer.getBoundingClientRect().top) 
+                    if (this.mainEditor.documentTop + this.mainEditor.defaultLineHeight > this.editorContainer.getBoundingClientRect().top)
                         this.igmePreview.movePreviewPosition(this, -2);
                     // 마지막 행에 이르면 preview도 맨 끝으로 보낸다.
-                    if(docBottom < clientBottom + this.mainEditor.defaultLineHeight) this.igmePreview.movePreviewPosition(this, -1);
+                    if (docBottom < clientBottom + this.mainEditor.defaultLineHeight) this.igmePreview.movePreviewPosition(this, -1);
                 }
-            }, {passive: true}
-        ); 
+            }, { passive: true }
+        );
 
         // 마우스 이동시 위치를 기억했다가 스크롤 시 참조한다.
         this.editorContainer.addEventListener("mousemove", function (e) {
             this.mousepagex = e.pageX;
             this.mousepagey = e.pageY;
-            if(this.mainEditor)
-                this.mainEditor.posAtCoords({x: this.mousepagex, y: this.mousepagey}, false);
+            if (this.mainEditor)
+                this.mainEditor.posAtCoords({ x: this.mousepagex, y: this.mousepagey }, false);
         });
 
         // // dark/light 모드에 따라 자동으로 바뀔 수 있도록 해 준다.
@@ -382,18 +384,34 @@ export default class IgnoteMarkdownEditor {
 
     // 글자 입력 등으로 본문의 내용이 변경된 경우
     onDocumentChanged() {
-        var self = this;
-        if (self.previewEnabled) {
-            self.onPasteInput = true;// 스크롤 이벤트가 처리되지 않고 키에서 스크롤 하도록... 
+        if (this.previewEnabled) {
+            this.onPasteInput = true;// 스크롤 이벤트가 처리되지 않고 키에서 스크롤 하도록... 
             // 여러 번 호출되면 시스템 부하도 많이 생기고 이상동작할 수 있으므로 타이머를 걸어서 간격을 두어 처리한다.
-            if (self.previewTimer != null) clearTimeout(self.previewTimer);
-            self.previewTimer = setTimeout((self) => {
-                self.igmePreview.renderMarkdownTextToPreview(this);
+            if (this.previewTimer != null) clearTimeout(this.previewTimer);
+            this.previewTimer = setTimeout(() => {
+                this.igmePreview.renderMarkdownTextToPreview(this);
                 // 입력이 많을 때에는 지연되어 스크롤에 현상태가 잘 반영이 안된다. 
                 // 그래서 스크롤이 여기에 맞추어 되도록 방법을 강구한다.
-                //self.scrollPreviewAsTextareaCursor(self);
-                self.onPasteInput = false;// 스크롤 이벤트가 처리하지 않고 키에서 스크롤 하도록...
-            }, 200, self);
+                //this.scrollPreviewAsTextareaCursor(this);
+                this.onPasteInput = false;// 스크롤 이벤트가 처리하지 않고 키에서 스크롤 하도록...
+            }, 200, this);
         }
     }
+
+    // 지정된 좌표에서의 행(0-based)을 구한다.
+    getRowFromCoords(pageX, pageY) {
+        var pos = this.mainEditor.posAtCoords({ x: pageX, y: pageY }, false); // 화면의 스크롤을 감안해야 한다.
+        return this.mainEditor.state.doc.lineAt(pos).number - 1;
+    }
+
+    // 스크롤 이벤트를 처리한다.
+    onScroll(event, view) {
+        // preview가 열려 있을 때만 조정한다.
+        const scrollTop = document.documentElement.scrollTop || window.pageYOffset;
+        if (!this.onPasteInput && !this.arrowKeyDown // 키관련 스크롤은 따로 처리되도록..
+            && this.previewEnabled) {
+            this.igmePreview.movePreviewPositionByLineNo(this.getRowFromCoords(this.mousepagex, this.mousepagey - scrollTop, this), this);
+        }
+    }
+
 }
