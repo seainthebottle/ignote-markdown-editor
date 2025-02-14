@@ -131,14 +131,14 @@ export default class IgnoteMarkdownEditor {
                 gutterBackground: "#161b22"
             },
             highlight: {
-                keyword: {color: "#c678dd"}, 
-                strong: {fontWeight: "bold"}, 
-                emphasis: {fontStyle: "italic"}, 
-                strikethrough: {textDecoration: "line-through"}, 
-                link: {color: "#7d8799", textDecoration: "underline"},
-                heading: {fontWeight: "bold", color: "#e06c75"},
-                processingInstruction: {color: "#98c379"},
-                tex: {color: "#61afef"}
+                keyword: { color: "#c678dd" },
+                strong: { fontWeight: "bold" },
+                emphasis: { fontStyle: "italic" },
+                strikethrough: { textDecoration: "line-through" },
+                link: { color: "#7d8799", textDecoration: "underline" },
+                heading: { fontWeight: "bold", color: "#e06c75" },
+                processingInstruction: { color: "#98c379" },
+                tex: { color: "#61afef" }
             },
             isDark: true
         }
@@ -148,9 +148,9 @@ export default class IgnoteMarkdownEditor {
             themeCompartment.of(baseTheme),
             fixedHeightEditor,
             EditorView.lineWrapping,
-            (typeof MathJax !== "undefined") ? 
-                markdown({extensions: [...GFM, Superscript, Subscript, Emoji, mdpMark, mdpFootnote, mdpTexInline, mdpTexBlock] })
-              : markdown({extensions: [...GFM, Superscript, Subscript, Emoji, mdpMark, mdpFootnote] }),
+            (typeof MathJax !== "undefined") ?
+                markdown({ extensions: [...GFM, Superscript, Subscript, Emoji, mdpMark, mdpFootnote, mdpTexInline, mdpTexBlock] })
+                : markdown({ extensions: [...GFM, Superscript, Subscript, Emoji, mdpMark, mdpFootnote] }),
             eventHandler,
             domeventhandler,
             lineNumbers(),
@@ -160,7 +160,7 @@ export default class IgnoteMarkdownEditor {
             dropCursor(),
             EditorState.allowMultipleSelections.of(true),
             indentOnInput(),
-            syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+            syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
             bracketMatching(),
             closeBrackets(),
             autocompletion(),
@@ -187,7 +187,7 @@ export default class IgnoteMarkdownEditor {
             extensions
         });
 
-        this.editor = new EditorView({
+        this.mainEditor = new EditorView({
             state: this.state,
             parent: this.editorContainer
         });
@@ -206,38 +206,134 @@ export default class IgnoteMarkdownEditor {
             const isMac = /Mac/i.test(navigator.userAgent);
 
             // Preview on/off: Alt + ` or Cmd + \
-            if ((!isMac && e.altKey && keyCode === '`') || (isMac && e.altKey && keyCode === '`')) {
+            if ((!isMac && e.altKey && keyCode === '`') || (isMac && e.metaKey && keyCode === '\\')) {
                 e.preventDefault();
                 this.igmePreview.togglePreview(this);
                 // preview 직후에 미처 에디터가 다 전환되지 않은 상태에서 리턴되므로
                 // 조금 여유를 두고 preview를 스크롤한다. (TODO: 나중에 아예 확실한 대책 마련 필요)
-                //if (self.previewEnabled) {
-                // 단축키로 전환시에는 대개 커서 위치에 작업중인 경우가 많아 preview를 커서 쪽으로 맞추는 것이 좋다.
-                //setTimeout(self.scrollPreviewAsTextareaCursor, 200, self);
-                //}
+                if (self.previewEnabled) {
+                    // 단축키로 전환시에는 대개 커서 위치에 작업중인 경우가 많아 preview를 커서 쪽으로 맞추는 것이 좋다.
+                    //setTimeout(this.scrollPreviewAsTextareaCursor, 200, self);
+                }
             }
         });
+
+        // 편집창에서 마우스 클릭될 때 preview 위치도 조정해준다.
+        // TODO: 편집창의 맨 윗줄이 자꾸 변동되므로 일관성 있게 유지되게 해 준다.
+        this.editorContainer.addEventListener("click", (e) => {
+            //self.getHtmlData()
+            // preview가 열려 있을 때만 조정한다.
+            // console.log('click', this.previewEnabled)
+            if (this.previewEnabled) this.scrollPreviewAsTextareaCursor(this);
+        });
+
+        // // 키 이벤트 처리기로 추후에 단축키 설정에 통합시켜야 한다.
+        this.editorContainer.addEventListener("keydown", (e) => {
+            const isMac = /Mac/i.test(navigator.userAgent);
+            let keyCode = e.key || e.keyCode;
+            // 탭키가 눌러지면 편집창을 벗어나지 않고 탭을 넣을 수 있도록 해 준다.
+            if (keyCode === "Tab") {
+                // console.log(this.mainContainer, this.insertMarkdownText)
+                e.preventDefault();
+                this.insertMarkdownText("\t");
+                return false;
+            }
+
+        //     // 방향키로 스크롤될 때에는 preview 스크롤이 스크롤 이벤트에서 처리되지 않고 keyup 이벤트로 처리되게 한다.
+        //     else if (keyCode === "PageUp" || keyCode === "PageDown" || 
+        //     keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") self.arrowKeyDown = true;
+
+        //     // 엔터키를 입력하면 키입력에 맞추어 스크롤 되게 한다.
+        //     else if (keyCode === "Enter") self.onPasteInput = true;
+        });
+
+        // // 키보드로 커서 이동시 스크롤도 함께 되도록 한다.
+        // document.querySelector(this.rmde_editor).addEventListener("keyup", function (e) {
+        //     let keyCode = e.key || e.keyCode;
+        //     if (keyCode === "PageUp" || keyCode === "PageDown" || 
+        //         keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") {//} ||
+        //         //(keyCode == "Enter" && self.enterLastLine)) { // 엔터로 내용이 바뀌면 이에 맞추어 업데이트 되는데 필요할 지...
+        //         self.arrowKeyDown = false;  
+        //         self.enterLastLine = false;  
+        //         if (self.previewEnabled) self.scrollPreviewAsTextareaCursor(self);
+        //     }
+        // });
+
+        // // 스크롤이 더 되지는 않으나 휠을 돌릴 때 처리를 한다.
+        // //this.mainEditor.session.on("changeScrollTop", // 이거는 더 스크롤 안되면 호출도 안된다.
+        // document.querySelector(this.rmde_editor).addEventListener("mousewheel", 
+        //     (e) => {
+        //         // 키보드가 움직여 스크롤할때는 따로 처리하므로 휠만 처리한다.
+        //         if (self.previewEnabled) {
+        //             var el = document.querySelector(this.rmde_editor);
+        //             var clientBottom = $(this.rmde_editor).offset().top + $(this.rmde_editor).height();
+        //             var docBottom = self.mainEditor.documentTop + self.mainEditor.contentHeight;
+        //             // 첫 행에 이르면 preview도 첫 행으로 보낸다.
+        //             if(self.mainEditor.documentTop + self.mainEditor.defaultLineHeight > $(this.rmde_editor).offset().top) self.rmdePreview.movePreviewPosition(self, -2);
+        //             // 마지막 행에 이르면 preview도 맨 끝으로 보낸다.
+        //             if(docBottom < clientBottom + self.mainEditor.defaultLineHeight) self.rmdePreview.movePreviewPosition(self, -1);
+        //         }
+        //     }, {passive: true}
+        // ); 
+
+        // // 마우스 이동시 위치를 기억했다가 스크롤 시 참조한다.
+        // document.querySelector(this.rmde_editor).addEventListener("mousemove", function (e) {
+        //     self.mousepagex = e.pageX;
+        //     self.mousepagey = e.pageY;
+        //     var pos = self.mainEditor.posAtCoords({x: self.mousepagex, y: self.mousepagey}, false);
+        // });
+
+        // // dark/light 모드에 따라 자동으로 바뀔 수 있도록 해 준다.
+        // window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+        //     var newDefaultTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)?rmdeDark:rmdeLight;
+        //     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+        //         if(typeof EditorSettings !== 'undefined' && typeof EditorSettings.darkTheme != 'undefined')
+        //             newDefaultTheme = getCustomeTheme(window[EditorSettings.darkTheme]); 
+        //         else newDefaultTheme = rmdeDark;
+        //     }
+        //     else {
+        //         if(typeof EditorSettings !== 'undefined' && typeof EditorSettings.lightTheme != 'undefined')
+        //             newDefaultTheme = getCustomeTheme(window[EditorSettings.lightTheme]); 
+        //         else newDefaultTheme = rmdeLight;
+        //     }
+        //     self.mainEditor.dispatch({effects: [themeCompartment.reconfigure([newDefaultTheme])]});
+        // });
+    }
+
+    // 현재 커서 위치로 preview를 스크롤한다.
+    scrollPreviewAsTextareaCursor(self) {
+        // TODO: 커서위치가 없을 경우 대비도 해야 한다.
+        // console.log('scrollPreviewAsTextareaCursor')
+        var selection = self.mainEditor.state.selection;
+        if (typeof selection === 'undefined') return false;
+        //var curFrom = selection.main.from;
+        var curTo = selection.main.to;
+
+        if (curTo === 0) this.igmePreview.movePreviewPosition(self, -2, false);
+        else if (curTo === this.mainEditor.state.doc.length) this.igmePreview.movePreviewPosition(this, -1, false);
+        else this.igmePreview.movePreviewPositionByLineNo(this.mainEditor.state.doc.lineAt(curTo).number - 1, this);
+        return true;
     }
 
     // Markdown 미리보기 업데이트
     updatePreview() {
         const content = this.getValue();
-        //this.previewContainer.innerHTML = this.md.render(content);
+        this.igmePreview.renderMarkdownTextToPreview(this);
     }
 
     // 값 가져오기
     getValue() {
-        return this.editor.state.doc.toString();
+        return this.mainEditor.state.doc.toString();
     }
 
     getOutputValue() {
-        return this.md.render(this.editor.state.doc.toString());
+        return this.md.render(this.mainEditor.state.doc.toString());
     }
 
     // 값 설정하기
     setValue(content) {
-        this.editor.dispatch({
-            changes: { from: 0, to: this.editor.state.doc.length, insert: content },
+        this.mainEditor.dispatch({
+            changes: { from: 0, to: this.mainEditor.state.doc.length, insert: content },
             effects: IgnoreUpdateEffect.of(null) // StateEffect 추가(업데이트 이벤트 발생을 막기 위해)
         });
         this.updatePreview();
@@ -245,21 +341,19 @@ export default class IgnoteMarkdownEditor {
 
     // Insert markdown text into the editor at current cursor position
     insertMarkdownText(markdownText) {
-        let selection = this.editor.state.selection;
+        let selection = this.mainEditor.state.selection;
         let curFrom = selection.main.from;
         let curTo = selection.main.to;
         let newCursorPosition = curFrom + markdownText.length; // 커서 위치 조정
 
         // 트랜잭션 생성 후 dispatch 실행
-        this.editor.dispatch({
+        this.mainEditor.dispatch({
             changes: { from: curFrom, to: curTo, insert: markdownText },
             selection: { anchor: newCursorPosition, head: newCursorPosition }
         });
 
-        this.updatePreview();
-
         // preview에도 반영한다.
-        if(this.previewEnabled) this.igmePreview.renderMarkdownTextToPreview(this);
+        if (this.previewEnabled) this.igmePreview.renderMarkdownTextToPreview(this);
 
         /*// 현재 커서 위치에 덮어쓰기를 한다.
         var selection = this.state.selection;
@@ -268,15 +362,15 @@ export default class IgnoteMarkdownEditor {
         var update = this.state.update(
             { changes: { from: curFrom, to: curTo, insert: markdownText } },
             { selection: { anchor: newCursorPosition, head: newCursorPosition } }
-        );
+        );*/
 
         // 커서를 새로 교체한 text의 끝에 위치시킨다. 그래야 순서가 올바르게 삽입된다.
-        var newCursorPosition = curTo + markdownText.length;
-        var move = { selection: { anchor: newCursorPosition, head: newCursorPosition } };
+        //var newCursorPosition = curTo + markdownText.length;
+        //var move = { selection: { anchor: newCursorPosition, head: newCursorPosition } };
 
         // 위의 transaction 들을 반영한다.
-        this.editor.dispatch(update);
-        this.editor.dispatch(move);*/
+        //this.editor.dispatch(update);
+        //this.editor.dispatch(move);
     }
 
     // 글자 입력 등으로 본문의 내용이 변경된 경우
@@ -287,20 +381,12 @@ export default class IgnoteMarkdownEditor {
             // 여러 번 호출되면 시스템 부하도 많이 생기고 이상동작할 수 있으므로 타이머를 걸어서 간격을 두어 처리한다.
             if (self.previewTimer != null) clearTimeout(self.previewTimer);
             self.previewTimer = setTimeout((self) => {
-                self.igmePreview.renderMarkdownTextToPreview(self);
-                //self.textareaCount.updateEditorSize();
-                //self.textareaCount.setText($(self.igme_editor).val());
+                self.igmePreview.renderMarkdownTextToPreview(this);
                 // 입력이 많을 때에는 지연되어 스크롤에 현상태가 잘 반영이 안된다. 
                 // 그래서 스크롤이 여기에 맞추어 되도록 방법을 강구한다.
                 //self.scrollPreviewAsTextareaCursor(self);
                 self.onPasteInput = false;// 스크롤 이벤트가 처리하지 않고 키에서 스크롤 하도록...
             }, 200, self);
         }
-
-        // autosave가 설정되어 있으면 2초 뒤에 자동저장한다.
-        //if(self.autosaveFlag === true) {
-        //    if(self.autosaveTime !== null) clearTimeout(self.autosaveTimer);
-        //    self.autosaveTimer = setTimeout(self.contentSave, 2000, self);
-        //} 
     }
 }
