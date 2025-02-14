@@ -211,9 +211,9 @@ export default class IgnoteMarkdownEditor {
                 this.igmePreview.togglePreview(this);
                 // preview 직후에 미처 에디터가 다 전환되지 않은 상태에서 리턴되므로
                 // 조금 여유를 두고 preview를 스크롤한다. (TODO: 나중에 아예 확실한 대책 마련 필요)
-                if (self.previewEnabled) {
+                if (this.previewEnabled) {
                     // 단축키로 전환시에는 대개 커서 위치에 작업중인 경우가 많아 preview를 커서 쪽으로 맞추는 것이 좋다.
-                    //setTimeout(this.scrollPreviewAsTextareaCursor, 200, self);
+                    //setTimeout(this.scrollPreviewAsTextareaCursor, 200, this);
                 }
             }
         });
@@ -221,7 +221,7 @@ export default class IgnoteMarkdownEditor {
         // 편집창에서 마우스 클릭될 때 preview 위치도 조정해준다.
         // TODO: 편집창의 맨 윗줄이 자꾸 변동되므로 일관성 있게 유지되게 해 준다.
         this.editorContainer.addEventListener("click", (e) => {
-            //self.getHtmlData()
+            //this.getHtmlData()
             // preview가 열려 있을 때만 조정한다.
             // console.log('click', this.previewEnabled)
             if (this.previewEnabled) this.scrollPreviewAsTextareaCursor(this);
@@ -239,49 +239,51 @@ export default class IgnoteMarkdownEditor {
                 return false;
             }
 
-        //     // 방향키로 스크롤될 때에는 preview 스크롤이 스크롤 이벤트에서 처리되지 않고 keyup 이벤트로 처리되게 한다.
-        //     else if (keyCode === "PageUp" || keyCode === "PageDown" || 
-        //     keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") self.arrowKeyDown = true;
+            // 방향키로 스크롤될 때에는 preview 스크롤이 스크롤 이벤트에서 처리되지 않고 keyup 이벤트로 처리되게 한다.
+            else if (keyCode === "PageUp" || keyCode === "PageDown" || 
+            keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") this.arrowKeyDown = true;
 
-        //     // 엔터키를 입력하면 키입력에 맞추어 스크롤 되게 한다.
-        //     else if (keyCode === "Enter") self.onPasteInput = true;
+            // 엔터키를 입력하면 키입력에 맞추어 스크롤 되게 한다.
+            else if (keyCode === "Enter") this.onPasteInput = true;
         });
 
-        // // 키보드로 커서 이동시 스크롤도 함께 되도록 한다.
-        // document.querySelector(this.rmde_editor).addEventListener("keyup", function (e) {
-        //     let keyCode = e.key || e.keyCode;
-        //     if (keyCode === "PageUp" || keyCode === "PageDown" || 
-        //         keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") {//} ||
-        //         //(keyCode == "Enter" && self.enterLastLine)) { // 엔터로 내용이 바뀌면 이에 맞추어 업데이트 되는데 필요할 지...
-        //         self.arrowKeyDown = false;  
-        //         self.enterLastLine = false;  
-        //         if (self.previewEnabled) self.scrollPreviewAsTextareaCursor(self);
-        //     }
-        // });
+        // 키보드로 커서 이동시 스크롤도 함께 되도록 한다.
+        this.editorContainer.addEventListener("keyup", function (e) {
+            let keyCode = e.key || e.keyCode;
+            if (keyCode === "PageUp" || keyCode === "PageDown" || 
+                keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") {//} ||
+                //(keyCode == "Enter" && this.enterLastLine)) { // 엔터로 내용이 바뀌면 이에 맞추어 업데이트 되는데 필요할 지...
+                this.arrowKeyDown = false;  
+                this.enterLastLine = false;  
+                if (this.previewEnabled) this.scrollPreviewAsTextareaCursor(this);
+            }
+        });
 
-        // // 스크롤이 더 되지는 않으나 휠을 돌릴 때 처리를 한다.
-        // //this.mainEditor.session.on("changeScrollTop", // 이거는 더 스크롤 안되면 호출도 안된다.
-        // document.querySelector(this.rmde_editor).addEventListener("mousewheel", 
-        //     (e) => {
-        //         // 키보드가 움직여 스크롤할때는 따로 처리하므로 휠만 처리한다.
-        //         if (self.previewEnabled) {
-        //             var el = document.querySelector(this.rmde_editor);
-        //             var clientBottom = $(this.rmde_editor).offset().top + $(this.rmde_editor).height();
-        //             var docBottom = self.mainEditor.documentTop + self.mainEditor.contentHeight;
-        //             // 첫 행에 이르면 preview도 첫 행으로 보낸다.
-        //             if(self.mainEditor.documentTop + self.mainEditor.defaultLineHeight > $(this.rmde_editor).offset().top) self.rmdePreview.movePreviewPosition(self, -2);
-        //             // 마지막 행에 이르면 preview도 맨 끝으로 보낸다.
-        //             if(docBottom < clientBottom + self.mainEditor.defaultLineHeight) self.rmdePreview.movePreviewPosition(self, -1);
-        //         }
-        //     }, {passive: true}
-        // ); 
+        // 스크롤이 더 되지는 않으나 휠을 돌릴 때 처리를 한다.
+        //this.mainEditor.session.on("changeScrollTop", // 이거는 더 스크롤 안되면 호출도 안된다.
+        this.editorContainer.addEventListener("mousewheel", 
+            (e) => {
+                // 키보드가 움직여 스크롤할때는 따로 처리하므로 휠만 처리한다.
+                if (this.previewEnabled) {
+                    var el = this.editorContainer;
+                    var clientBottom = this.editorContainer.getBoundingClientRect().top + window.getComputedStyle(this.editorContainer).height;
+                    var docBottom = this.mainEditor.documentTop + this.mainEditor.contentHeight;
+                    // 첫 행에 이르면 preview도 첫 행으로 보낸다.
+                    if(this.mainEditor.documentTop + this.mainEditor.defaultLineHeight > this.editorContainer.getBoundingClientRect().top) 
+                        this.igmePreview.movePreviewPosition(this, -2);
+                    // 마지막 행에 이르면 preview도 맨 끝으로 보낸다.
+                    if(docBottom < clientBottom + this.mainEditor.defaultLineHeight) this.igmePreview.movePreviewPosition(this, -1);
+                }
+            }, {passive: true}
+        ); 
 
-        // // 마우스 이동시 위치를 기억했다가 스크롤 시 참조한다.
-        // document.querySelector(this.rmde_editor).addEventListener("mousemove", function (e) {
-        //     self.mousepagex = e.pageX;
-        //     self.mousepagey = e.pageY;
-        //     var pos = self.mainEditor.posAtCoords({x: self.mousepagex, y: self.mousepagey}, false);
-        // });
+        // 마우스 이동시 위치를 기억했다가 스크롤 시 참조한다.
+        this.editorContainer.addEventListener("mousemove", function (e) {
+            this.mousepagex = e.pageX;
+            this.mousepagey = e.pageY;
+            if(this.mainEditor)
+                this.mainEditor.posAtCoords({x: this.mousepagex, y: this.mousepagey}, false);
+        });
 
         // // dark/light 모드에 따라 자동으로 바뀔 수 있도록 해 준다.
         // window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
@@ -296,7 +298,7 @@ export default class IgnoteMarkdownEditor {
         //             newDefaultTheme = getCustomeTheme(window[EditorSettings.lightTheme]); 
         //         else newDefaultTheme = rmdeLight;
         //     }
-        //     self.mainEditor.dispatch({effects: [themeCompartment.reconfigure([newDefaultTheme])]});
+        //     this.mainEditor.dispatch({effects: [themeCompartment.reconfigure([newDefaultTheme])]});
         // });
     }
 
@@ -304,15 +306,20 @@ export default class IgnoteMarkdownEditor {
     scrollPreviewAsTextareaCursor(self) {
         // TODO: 커서위치가 없을 경우 대비도 해야 한다.
         // console.log('scrollPreviewAsTextareaCursor')
-        var selection = self.mainEditor.state.selection;
+        var selection = this.mainEditor.state.selection;
         if (typeof selection === 'undefined') return false;
         //var curFrom = selection.main.from;
         var curTo = selection.main.to;
 
-        if (curTo === 0) this.igmePreview.movePreviewPosition(self, -2, false);
+        if (curTo === 0) this.igmePreview.movePreviewPosition(this, -2, false);
         else if (curTo === this.mainEditor.state.doc.length) this.igmePreview.movePreviewPosition(this, -1, false);
         else this.igmePreview.movePreviewPositionByLineNo(this.mainEditor.state.doc.lineAt(curTo).number - 1, this);
         return true;
+    }
+
+    // 에디터에 포커스를 맞춰준다.
+    focus() {
+        this.mainEditor.focus();
     }
 
     // Markdown 미리보기 업데이트
