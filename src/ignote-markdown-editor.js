@@ -204,11 +204,10 @@ export default class IgnoteMarkdownEditor {
             let keyCode = e.key || e.keyCode;
             // Detect if the platform is macOS
             const isMac = /Mac/i.test(navigator.userAgent);
-            const isAlt = e.altKey && !e.metaKey; // Alt key without Cmd key
-            const isCmd = e.metaKey && !e.altKey; // Cmd key without Alt key
 
             // Preview on/off: Alt + ` or Cmd + \
-            if ((!isMac && isAlt && keyCode === '`') || (isMac && isCmd && keyCode === '\\')) {
+            if ((!isMac && e.altKey && keyCode === '`') || (isMac && e.altKey && keyCode === '`')) {
+                e.preventDefault();
                 this.igmePreview.togglePreview(this);
                 // preview 직후에 미처 에디터가 다 전환되지 않은 상태에서 리턴되므로
                 // 조금 여유를 두고 preview를 스크롤한다. (TODO: 나중에 아예 확실한 대책 마련 필요)
