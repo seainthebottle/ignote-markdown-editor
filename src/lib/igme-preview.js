@@ -31,7 +31,6 @@ class IgmePreview {
             !document.querySelector(`#IgmePreview [data-source-line="${effTextLineNo}"]`)?.getBoundingClientRect() 
                 && effTextLineNo >= 0;
             effTextLineNo--);
-        //console.log("effectiveLineNo", effTextLineNo)
         return effTextLineNo;
     }
 
@@ -64,7 +63,6 @@ class IgmePreview {
         animate = false,
         reposToEditorTarget = 0, // 에디트중인 위치로 preview도 위치 조정 
     ) {
-        //console.log(`movePreviewPosition linenum:${linenum}, animate:${animate}, slideDown: ${slideDown}`)
         const previewContainer = document.getElementById('IgmePreview');
         // 끝줄로 가면 끝줄 처리를 한다.
         if (linenum == -1) {
@@ -80,10 +78,7 @@ class IgmePreview {
 
         // 해당 행에 맞는 preview 위치로 preview 텍스트를 옮긴다.
         const targetElement = document.querySelector(`#IgmePreview [data-source-line="${linenum}"]`);
-        //console.log(linenum, targetElement)
         let offset = targetElement?.getBoundingClientRect(); // document 상 위치
-        // TODO: 정의되어 있지 않을 경우 화면전환시 엉뚱한 곳으로 가는 경우가 있어 보정이 필요하다.
-        // --> 그 윗줄끼리라도 맞춘다.
         if (!offset) return; 
         // preview 최상단에서 현재 markdown에서 찍은 문장의 HTML 파트의 윗부분과의 거리
         let distance = offset.top - previewContainer.getBoundingClientRect()?.top; 
