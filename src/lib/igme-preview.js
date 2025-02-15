@@ -10,6 +10,12 @@ class IgmePreview {
 
     }
 
+    /**
+     * 에디터의 지정된 행의 블록의 브라우저 내 y좌표를 pixel 단위로 리턴한다.  
+     * @param {*} textLineNo 
+     * @param {*} self 
+     * @returns 
+     */
     getDocumentYFromLineNo(textLineNo, self) {
         var lineInfo = self.mainEditor.state.doc.line(textLineNo + 1);
         var blockInfo = self.mainEditor.lineBlockAt(lineInfo.from);
@@ -22,16 +28,17 @@ class IgmePreview {
     getEffectiveLineNo(textLineNo) {
         // 해당 textLineNo에 해당하는 preview HTML이 없으면 나올 때까지 textLineNo를 줄여가며 찾는다. 
         for (var effTextLineNo = textLineNo;
-            this.getOffset(`[data-source-line="${effTextLineNo}"]`) === undefined && effTextLineNo >= 0;
+            !document.querySelector(`#IgmePreview [data-source-line="${effTextLineNo}"]`)?.getBoundingClientRect() 
+                && effTextLineNo >= 0;
             effTextLineNo--);
-        // console.log(effTextLineNo)
+        //console.log("effectiveLineNo", effTextLineNo)
         return effTextLineNo;
     }
 
     /**
      * 특정 행번호에 해당하는 preview HTML을 preview 상단으로 이동한다.
      */
-    movePreviewPositionByLineNo(textLineNo, self) {
+    movePreviewPositionWithEditorPosition(textLineNo, self) {
         // 첫줄과 끝줄은 따로 처리한다.
         if (textLineNo === -2 || textLineNo === -1) this.movePreviewPosition(self, textLineNo);
         else {
@@ -39,12 +46,10 @@ class IgmePreview {
             // 앞 부분에 effectiveLineNo가 없으면 맨 앞으로 스크롤한다.
             if(effectiveTextLineNo == -1) this.movePreviewPosition(self, -2);
             else {
-                let editorContainer = document.getElementById('IgmeEditor');
                 // 해당 행이 위치하는 Y 좌표를 구해 거기서 에디터 상단 Y를 뺀 만큼이 스크롤량이다.
-                var documentY = this.getDocumentYFromLineNo(effectiveTextLineNo, self); // 맨 윗줄에서 얼마나 떨어져 있느냐(픽셀단위)
-                var scrollY = documentY + self.mainEditor.documentTop; // documentTop은 스크린 상에서의 위치(스크롤 반영)
-                var top = editorContainer.getBoundingClientRect().top - (document.documentElement.scrollTop || document.body.scrollTop); // 에디터의 위치(스크롤 반영)
-                this.movePreviewPosition(self, effectiveTextLineNo, false, scrollY - top);
+                let documentY = this.getDocumentYFromLineNo(effectiveTextLineNo, self); // 지정된 행이 맨 윗줄에서 얼마나 떨어져 있느냐(픽셀단위)
+                let documentScrolled = self.mainEditor.scrollDOM.scrollTop; // 에디터가 얼마나 스크롤되어 있느냐
+                this.movePreviewPosition(self, effectiveTextLineNo, false, documentY - documentScrolled);
             }
         }
     }
@@ -57,8 +62,9 @@ class IgmePreview {
         self,
         linenum,
         animate = false,
-        slideDown = 0, // 스크롤 미세조정을 위해 얼마나 더 내릴 것인가(덜 끌어올릴 것인가) 결정
+        reposToEditorTarget = 0, // 에디트중인 위치로 preview도 위치 조정 
     ) {
+        //console.log(`movePreviewPosition linenum:${linenum}, animate:${animate}, slideDown: ${slideDown}`)
         const previewContainer = document.getElementById('IgmePreview');
         // 끝줄로 가면 끝줄 처리를 한다.
         if (linenum == -1) {
@@ -74,6 +80,7 @@ class IgmePreview {
 
         // 해당 행에 맞는 preview 위치로 preview 텍스트를 옮긴다.
         const targetElement = document.querySelector(`#IgmePreview [data-source-line="${linenum}"]`);
+        //console.log(linenum, targetElement)
         let offset = targetElement?.getBoundingClientRect(); // document 상 위치
         // TODO: 정의되어 있지 않을 경우 화면전환시 엉뚱한 곳으로 가는 경우가 있어 보정이 필요하다.
         // --> 그 윗줄끼리라도 맞춘다.
@@ -85,7 +92,7 @@ class IgmePreview {
         let scrollval = // 첫 행을 document 기준 어느 Y좌표까지 끌어올릴지
             previewContainer.scrollTop // preview에서 스크롤바로 이미 스크롤되어 있는 양
             + distance // 현재 목적행을 화면 맨 위로 옮기기 위해 끌어올릴 분량
-            - slideDown; // 끌어내릴 분량
+            - reposToEditorTarget; // 끌어내릴 분량
         if (scrollval < 0) scrollval = 0;
 
         this.scrollAnimate(previewContainer, scrollval);
@@ -195,7 +202,7 @@ class IgmePreview {
      * @returns 
      */
     scrollAnimate(element, targetScrollTop = 0, duration = 100) {
-        if (!element) return;
+        /*if (!element) return;
 
         // 기존 애니메이션 중단
         if (element.animationFrame) {
@@ -209,25 +216,16 @@ class IgmePreview {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1); // 0 ~ 1 범위
 
-            // Linear easing 적용
-            element.scrollTop = start + (targetScrollTop - start) * progress;
+            // Linear easing 적용*/
+            //element.scrollTop = start + (targetScrollTop - start) * progress;
+            element.scrollTop = targetScrollTop;
 
-            if (progress < 1) {
+            /*if (progress < 1) {
                 element.animationFrame = requestAnimationFrame(animateScroll);
             }
         }
 
-        requestAnimationFrame(animateScroll);
-    }
-
-    /**
-     * 해당 selector가 지정하는 element의 위치를 구한다.
-     * @param {*} selector 
-     * @returns 
-     */
-    getOffset(selector) {
-        const element = document.querySelector(selector);
-        return element ? element.getBoundingClientRect() : null;
+        requestAnimationFrame(animateScroll);*/
     }
 
 

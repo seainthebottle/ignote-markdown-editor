@@ -46,8 +46,8 @@ export default class IgnoteMarkdownEditor {
         this.autosaveTimer = null;
         this.autosaveFlag = false;
 
-        this.mousepagex = null;
-        this.mousepagey = null;
+        this.mouseClientX = null;
+        this.mouseClientY = null;
 
         this.arrowKeyDown = false;
         this.onPasteInput = false;
@@ -194,13 +194,15 @@ export default class IgnoteMarkdownEditor {
 
         this.igmePreview = new IgmePreview();
 
+        this.mainEditorElement = document.querySelector("#IgmeEditor .cm-editor");
+
         this.updatePreview();
         this.addEventListeners();
     }
 
     // 에디터 이벤트 리스너 추가
     addEventListeners() {
-        this.editorContainer.addEventListener("keydown", (e) => {
+        this.mainEditorElement.addEventListener("keydown", (e) => {
             let keyCode = e.key || e.keyCode;
             // Detect if the platform is macOS
             const isMac = /Mac/i.test(navigator.userAgent);
@@ -220,7 +222,7 @@ export default class IgnoteMarkdownEditor {
 
         // 편집창에서 마우스 클릭될 때 preview 위치도 조정해준다.
         // TODO: 편집창의 맨 윗줄이 자꾸 변동되므로 일관성 있게 유지되게 해 준다.
-        this.editorContainer.addEventListener("click", (e) => {
+        this.mainEditorElement.addEventListener("click", (e) => {
             //this.getHtmlData()
             // preview가 열려 있을 때만 조정한다.
             // console.log('click', this.previewEnabled)
@@ -228,7 +230,7 @@ export default class IgnoteMarkdownEditor {
         });
 
         // // 키 이벤트 처리기로 추후에 단축키 설정에 통합시켜야 한다.
-        this.editorContainer.addEventListener("keydown", (e) => {
+        this.mainEditorElement.addEventListener("keydown", (e) => {
             const isMac = /Mac/i.test(navigator.userAgent);
             let keyCode = e.key || e.keyCode;
             // 탭키가 눌러지면 편집창을 벗어나지 않고 탭을 넣을 수 있도록 해 준다.
@@ -248,7 +250,7 @@ export default class IgnoteMarkdownEditor {
         });
 
         // 키보드로 커서 이동시 스크롤도 함께 되도록 한다.
-        this.editorContainer.addEventListener("keyup", function (e) {
+        this.mainEditorElement.addEventListener("keyup", (e) => {
             let keyCode = e.key || e.keyCode;
             if (keyCode === "PageUp" || keyCode === "PageDown" ||
                 keyCode === "ArrowUp" || keyCode === "ArrowDown" || keyCode === "ArrowLeft" || keyCode === "ArrowRight") {//} ||
@@ -261,30 +263,33 @@ export default class IgnoteMarkdownEditor {
 
         // 스크롤이 더 되지는 않으나 휠을 돌릴 때 처리를 한다.
         //this.mainEditor.session.on("changeScrollTop", // 이거는 더 스크롤 안되면 호출도 안된다.
-        this.editorContainer.addEventListener("mousewheel",
-            (e) => {
-                // 키보드가 움직여 스크롤할때는 따로 처리하므로 휠만 처리한다.
-                if (this.previewEnabled) {
-                    var el = this.editorContainer;
-                    var clientBottom = this.editorContainer.getBoundingClientRect().top + parseFloat(window.getComputedStyle(this.editorContainer).height);
-                    //console.log('client - ', this.editorContainer.getBoundingClientRect().top, clientBottom)
-                    var docBottom = this.mainEditor.documentTop + this.mainEditor.contentHeight;
-                    //console.log(docBottom)
-                    // 첫 행에 이르면 preview도 첫 행으로 보낸다.
-                    if (this.mainEditor.documentTop + this.mainEditor.defaultLineHeight > this.editorContainer.getBoundingClientRect().top)
-                        this.igmePreview.movePreviewPosition(this, -2);
-                    // 마지막 행에 이르면 preview도 맨 끝으로 보낸다.
-                    if (docBottom < clientBottom + this.mainEditor.defaultLineHeight) this.igmePreview.movePreviewPosition(this, -1);
-                }
-            }, { passive: true }
+        this.mainEditorElement.addEventListener("mousewheel", (e) => {
+            //console.log(`mousemove wh cli x:${e.clientX} y:${e.clientY}`)
+            this.mouseClientX = e.clientX;
+            this.mouseClientY = e.clientY;
+            // 키보드가 움직여 스크롤할때는 따로 처리하므로 휠만 처리한다.
+            if (this.previewEnabled) {
+                var el = this.mainEditorElement;
+                var clientBottom = this.mainEditorElement.getBoundingClientRect().top + parseFloat(window.getComputedStyle(this.mainEditorElement).height);
+                //console.log('client - ', this.mainEditorElement.getBoundingClientRect().top, clientBottom)
+                var docBottom = this.mainEditor.documentTop + this.mainEditor.contentHeight;
+                //console.log(docBottom)
+                // 첫 행에 이르면 preview도 첫 행으로 보낸다.
+                if (this.mainEditor.documentTop + this.mainEditor.defaultLineHeight > this.mainEditorElement.getBoundingClientRect().top)
+                    this.igmePreview.movePreviewPosition(this, -2);
+                // 마지막 행에 이르면 preview도 맨 끝으로 보낸다.
+                if (docBottom < clientBottom + this.mainEditor.defaultLineHeight) this.igmePreview.movePreviewPosition(this, -1);
+            }
+        }, { passive: true }
         );
 
         // 마우스 이동시 위치를 기억했다가 스크롤 시 참조한다.
-        this.editorContainer.addEventListener("mousemove", function (e) {
-            this.mousepagex = e.pageX;
-            this.mousepagey = e.pageY;
-            if (this.mainEditor)
-                this.mainEditor.posAtCoords({ x: this.mousepagex, y: this.mousepagey }, false);
+        this.mainEditorElement.addEventListener("mousemove", (e) => {
+            //console.log(`mousemove cli x:${e.clientX} y:${e.clientY}`)
+            this.mouseClientX = e.clientX;
+            this.mouseClientY = e.clientY;
+            //if (this.mainEditor)
+            //    this.mainEditor.posAtCoords({ x: this.clientX, y: this.clientY }, false);
         });
 
         // // dark/light 모드에 따라 자동으로 바뀔 수 있도록 해 준다.
@@ -315,7 +320,7 @@ export default class IgnoteMarkdownEditor {
 
         if (curTo === 0) this.igmePreview.movePreviewPosition(this, -2, false);
         else if (curTo === this.mainEditor.state.doc.length) this.igmePreview.movePreviewPosition(this, -1, false);
-        else this.igmePreview.movePreviewPositionByLineNo(this.mainEditor.state.doc.lineAt(curTo).number - 1, this);
+        else this.igmePreview.movePreviewPositionWithEditorPosition(this.mainEditor.state.doc.lineAt(curTo).number - 1, this);
         return true;
     }
 
@@ -399,8 +404,8 @@ export default class IgnoteMarkdownEditor {
     }
 
     // 지정된 좌표에서의 행(0-based)을 구한다.
-    getRowFromCoords(pageX, pageY) {
-        var pos = this.mainEditor.posAtCoords({ x: pageX, y: pageY }, false); // 화면의 스크롤을 감안해야 한다.
+    getRowFromCoords(x, y) {
+        var pos = this.mainEditor.posAtCoords({ x, y }, false); // 여기의 좌표는 브라우저내 화면의 좌표기준이다.
         return this.mainEditor.state.doc.lineAt(pos).number - 1;
     }
 
@@ -410,7 +415,9 @@ export default class IgnoteMarkdownEditor {
         const scrollTop = document.documentElement.scrollTop || window.pageYOffset;
         if (!this.onPasteInput && !this.arrowKeyDown // 키관련 스크롤은 따로 처리되도록..
             && this.previewEnabled) {
-            this.igmePreview.movePreviewPositionByLineNo(this.getRowFromCoords(this.mousepagex, this.mousepagey - scrollTop, this), this);
+            const line_no = this.getRowFromCoords(this.mouseClientX, this.mouseClientY - scrollTop, this);
+            //console.log(`line_no: ${line_no}, x:${this.mouseClientX}, y: ${this.mouseClientY}, scrollTop: ${scrollTop}`)
+            this.igmePreview.movePreviewPositionWithEditorPosition(line_no, this);
         }
     }
 
