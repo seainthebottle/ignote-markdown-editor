@@ -1,12 +1,9 @@
 
-//import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { nord } from "cm6-theme-nord";
-import {
-    EditorView, keymap, highlightActiveLine, dropCursor,
-    rectangularSelection, crosshairCursor,
-    lineNumbers
-} from "@codemirror/view"
+import { EditorView, keymap, highlightActiveLine, dropCursor,
+         rectangularSelection, crosshairCursor,
+         lineNumbers } from "@codemirror/view"
 import { Compartment, StateEffect, EditorState } from "@codemirror/state"
 import { defaultHighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language"
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
@@ -16,6 +13,7 @@ import { lintKeymap } from "@codemirror/lint"
 import { markdown } from "@codemirror/lang-markdown";
 import { GFM, Superscript, Subscript, Emoji } from "@lezer/markdown";
 import { mdpTexInline, mdpTexBlock, mdpMark, mdpFootnote } from "./lib/additional-markdown-parser";
+
 import MarkdownIt from "markdown-it";
 import mdiFootNote from "markdown-it-footnote";
 import mdiAbbr from "markdown-it-abbr";
@@ -24,16 +22,17 @@ import mdiDeflist from "markdown-it-deflist";
 import mdiTasks from "markdown-it-tasks";
 import mdiSup from "markdown-it-sup";
 import mdiSub from "markdown-it-sub";
+import markdownItImageSize from "./lib/markdown-it-imgsize";
+import markdownitMathjax from "./lib/markdown-it-mathjax";
+import markdownItInjectLineNumbers from "./lib/markdown-it-inject-linenumbers";
 
 import IgmePreview from "./lib/igme-preview";
 import { getCustomTheme } from "./lib/theme-custom";
 
 
-import markdownItImageSize from "./lib/markdown-it-imgsize";
-import markdownitMathjax from "./lib/markdown-it-mathjax";
-import markdownItInjectLineNumbers from "./lib/markdown-it-inject-linenumbers";
+import HtmlSanitizer from "./lib/htmlSanitizer";
 
-// 🚀 StateEffect를 전역에서 정의 (클래스 외부에서 한 번만 선언)
+// StateEffect를 전역에서 정의 (클래스 외부에서 한 번만 선언)
 const IgnoreUpdateEffect = StateEffect.define();
 
 export default class IgnoteMarkdownEditor {
@@ -86,7 +85,6 @@ export default class IgnoteMarkdownEditor {
         if (typeof MathJax !== "undefined") {
             this.md.use(markdownitMathjax());
         }
-        //
 
         // 브로드캐스팅 채널 설정
         this.broadcastChannel = new BroadcastChannel("ignote_channel");
@@ -192,7 +190,7 @@ export default class IgnoteMarkdownEditor {
             parent: this.editorContainer
         });
 
-        this.igmePreview = new IgmePreview();
+        this.igmePreview = new IgmePreview(this);
 
         this.mainEditorElement = document.querySelector("#IgmeEditor .cm-editor");
 
@@ -210,7 +208,7 @@ export default class IgnoteMarkdownEditor {
             // Preview on/off: Alt + ` or Cmd + \
             if ((!isMac && e.altKey && keyCode === '`') || (isMac && e.metaKey && keyCode === '\\')) {
                 e.preventDefault();
-                this.igmePreview.togglePreview(this);
+                this.igmePreview.togglePreview();
                 // preview 직후에 미처 에디터가 다 전환되지 않은 상태에서 리턴되므로
                 // 조금 여유를 두고 preview를 스크롤한다. (TODO: 나중에 아예 확실한 대책 마련 필요)
                 if (this.previewEnabled) {
@@ -276,9 +274,9 @@ export default class IgnoteMarkdownEditor {
                 //console.log(docBottom)
                 // 첫 행에 이르면 preview도 첫 행으로 보낸다.
                 if (this.mainEditor.documentTop + this.mainEditor.defaultLineHeight > this.mainEditorElement.getBoundingClientRect().top)
-                    this.igmePreview.movePreviewPosition(this, -2);
+                    this.igmePreview.movePreviewPosition(-2);
                 // 마지막 행에 이르면 preview도 맨 끝으로 보낸다.
-                if (docBottom < clientBottom + this.mainEditor.defaultLineHeight) this.igmePreview.movePreviewPosition(this, -1);
+                if (docBottom < clientBottom + this.mainEditor.defaultLineHeight) this.igmePreview.movePreviewPosition(-1);
             }
         }, { passive: true }
         );
@@ -318,33 +316,54 @@ export default class IgnoteMarkdownEditor {
         //var curFrom = selection.main.from;
         var curTo = selection.main.to;
 
-        if (curTo === 0) this.igmePreview.movePreviewPosition(this, -2, false);
-        else if (curTo === this.mainEditor.state.doc.length) this.igmePreview.movePreviewPosition(this, -1, false);
-        else this.igmePreview.movePreviewPositionWithEditorPosition(this.mainEditor.state.doc.lineAt(curTo).number - 1, this);
+        if (curTo === 0) this.igmePreview.movePreviewPosition(-2, false);
+        else if (curTo === this.mainEditor.state.doc.length) this.igmePreview.movePreviewPosition(-1, false);
+        else this.igmePreview.movePreviewPositionWithEditorPosition(this.mainEditor.state.doc.lineAt(curTo).number - 1);
         return true;
     }
 
-    // 에디터에 포커스를 맞춰준다.
+    /** 
+     * 에디터에 포커스를 맞춰준다. 
+     * */ 
     focus() {
         this.mainEditor.focus();
     }
 
-    // Markdown 미리보기 업데이트
-    updatePreview() {
-        const content = this.getValue();
-        this.igmePreview.renderMarkdownTextToPreview(this);
+    /**
+     * 에디터 옆에 프리뷰 표시여부를 변경한다.
+     * @param {*} mode 
+     */
+    togglePreview(mode) {
+        this.igmePreview.togglePreview(mode);
     }
 
-    // 값 가져오기
+    /**
+     * Markdown 미리보기 업데이트
+     */
+    updatePreview() {
+        const content = this.getValue();
+        this.igmePreview.renderMarkdownTextToPreview();
+    }
+
+    /**
+     * 편집한 Markdown 가져오기
+     * @returns {string} Markdown 문서
+     */
     getValue() {
         return this.mainEditor.state.doc.toString();
     }
 
+    /**
+     * Markdown으로 편집된 문서를 HTML로 변환하여 가져온다.
+     * @returns {string} HTML 문서
+     */
     getOutputValue() {
-        return this.md.render(this.mainEditor.state.doc.toString());
+        return HtmlSanitizer.SanitizeHtml(this.md.render(this.mainEditor.state.doc.toString()));
     }
 
-    // 값 설정하기
+    /**
+     * Markdown 설정하기
+     */ 
     setValue(content) {
         this.mainEditor.dispatch({
             changes: { from: 0, to: this.mainEditor.state.doc.length, insert: content },
@@ -353,7 +372,9 @@ export default class IgnoteMarkdownEditor {
         this.updatePreview();
     }
 
-    // Insert markdown text into the editor at current cursor position
+    /** 
+     * Insert markdown text into the editor at current cursor position
+     */
     insertMarkdownText(markdownText) {
         let selection = this.mainEditor.state.selection;
         let curFrom = selection.main.from;
@@ -367,7 +388,7 @@ export default class IgnoteMarkdownEditor {
         });
 
         // preview에도 반영한다.
-        if (this.previewEnabled) this.igmePreview.renderMarkdownTextToPreview(this);
+        if (this.previewEnabled) this.igmePreview.renderMarkdownTextToPreview();
 
         /*// 현재 커서 위치에 덮어쓰기를 한다.
         var selection = this.state.selection;
@@ -387,14 +408,16 @@ export default class IgnoteMarkdownEditor {
         //this.editor.dispatch(move);
     }
 
-    // 글자 입력 등으로 본문의 내용이 변경된 경우
+    /**
+     * 글자 입력 등으로 본문의 내용이 변경된 경우
+     */
     onDocumentChanged() {
         if (this.previewEnabled) {
             this.onPasteInput = true;// 스크롤 이벤트가 처리되지 않고 키에서 스크롤 하도록... 
             // 여러 번 호출되면 시스템 부하도 많이 생기고 이상동작할 수 있으므로 타이머를 걸어서 간격을 두어 처리한다.
             if (this.previewTimer != null) clearTimeout(this.previewTimer);
             this.previewTimer = setTimeout(() => {
-                this.igmePreview.renderMarkdownTextToPreview(this);
+                this.igmePreview.renderMarkdownTextToPreview();
                 // 입력이 많을 때에는 지연되어 스크롤에 현상태가 잘 반영이 안된다. 
                 // 그래서 스크롤이 여기에 맞추어 되도록 방법을 강구한다.
                 //this.scrollPreviewAsTextareaCursor(this);
@@ -403,13 +426,17 @@ export default class IgnoteMarkdownEditor {
         }
     }
 
-    // 지정된 좌표에서의 행(0-based)을 구한다.
+    /**
+     * 지정된 좌표에서의 행(0-based)을 구한다.
+     */
     getRowFromCoords(x, y) {
         var pos = this.mainEditor.posAtCoords({ x, y }, false); // 여기의 좌표는 브라우저내 화면의 좌표기준이다.
         return this.mainEditor.state.doc.lineAt(pos).number - 1;
     }
 
-    // 스크롤 이벤트를 처리한다.
+    /**
+     * 스크롤 이벤트를 처리한다.
+     */
     onScroll(event, view) {
         // preview가 열려 있을 때만 조정한다.
         const scrollTop = document.documentElement.scrollTop || window.pageYOffset;
@@ -417,7 +444,7 @@ export default class IgnoteMarkdownEditor {
             && this.previewEnabled) {
             const line_no = this.getRowFromCoords(this.mouseClientX, this.mouseClientY - scrollTop, this);
             //console.log(`line_no: ${line_no}, x:${this.mouseClientX}, y: ${this.mouseClientY}, scrollTop: ${scrollTop}`)
-            this.igmePreview.movePreviewPositionWithEditorPosition(line_no, this);
+            this.igmePreview.movePreviewPositionWithEditorPosition(line_no);
         }
     }
 
