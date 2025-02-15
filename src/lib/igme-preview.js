@@ -10,7 +10,7 @@ class IgmePreview {
         this.parent = parent;
         this.main_container = document.getElementById('PageEditorContainer');
         this.editor_container = document.getElementById('IgmeEditor');
-        this.preview_container = document.getElementById('IgmePreview');
+        //this.preview_container = document.getElementById('IgmePreview');
     }
 
     /**
@@ -32,7 +32,7 @@ class IgmePreview {
     getEffectiveLineNo(textLineNo) {
         // 해당 textLineNo에 해당하는 preview HTML이 없으면 나올 때까지 textLineNo를 줄여가며 찾는다. 
         for (var effTextLineNo = textLineNo;
-            !document.querySelector(`#IgmePreview [data-source-line="${effTextLineNo}"]`)?.getBoundingClientRect() 
+            !document.querySelector(`[data-source-line="${effTextLineNo}"]`)?.getBoundingClientRect() 
                 && effTextLineNo >= 0;
             effTextLineNo--);
         return effTextLineNo;
@@ -70,7 +70,7 @@ class IgmePreview {
         animate = false,
         reposToEditorTarget = 0, 
     ) {
-        const previewContainer = document.getElementById('IgmePreview');
+        const previewContainer = this.parent.previewContainer;//document.getElementById('IgmePreview');
         // 끝줄로 가면 끝줄 처리를 한다.
         if (linenum == -1) {
             let scrollHeight = previewContainer.scrollHeight;
@@ -84,7 +84,7 @@ class IgmePreview {
         }
 
         // 해당 행에 맞는 preview 위치로 preview 텍스트를 옮긴다.
-        const targetElement = document.querySelector(`#IgmePreview [data-source-line="${linenum}"]`);
+        const targetElement = document.querySelector(`[data-source-line="${linenum}"]`);
         let offset = targetElement?.getBoundingClientRect(); // document 상 위치
         if (!offset) return; 
         // preview 최상단에서 현재 markdown에서 찍은 문장의 HTML 파트의 윗부분과의 거리
@@ -120,7 +120,7 @@ class IgmePreview {
     renderMarkdownTextToPreview() {
         // 변환한다.
         let convertedHTMLText = HtmlSanitizer.SanitizeHtml(this.parent.getOutputValue());
-        let preview_element = document.getElementById('IgmePreview');
+        let preview_element = this.parent.previewContainer;
 
         // 이전 DOM(preview_element)과 비교하여 바뀐 부분만 반영되도록 한다.
         diff.changeDiff(diff.stringToHTML(convertedHTMLText), preview_element);
@@ -140,13 +140,14 @@ class IgmePreview {
         //console.log(`togglePreview ${mode}`)
         const main_container = document.getElementById('PageEditorContainer');
         const editor_container = document.getElementById('IgmeEditor');
-        const preview_container = document.getElementById('IgmePreview');
+        const preview_container = this.parent.previewContainer;// document.getElementById('IgmePreview');
         preview_container.classList.add('page-viewer-element');
         let preview_display = preview_container.style.display;
-        let preview_float = preview_container.style.float;
 
         let total_height = window.getComputedStyle(main_container).height;
         let editor_height = null;
+
+        if(window.getComputedStyle(main_container).display == 'none') return;
 
         // 이전에 preview가 없었던 경우 preview를 만든다.
         if ((mode == 'toggle' && preview_display == "none") || mode == "preview") {

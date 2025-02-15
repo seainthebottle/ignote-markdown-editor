@@ -57,11 +57,14 @@ export default class IgnoteMarkdownEditor {
         this.editorContainer = document.createElement('div');
         this.editorContainer.id = 'IgmeEditor';
         this.editorContainer.style = `display: block; width: 100%; height: 100%; padding: 0; margin: 0;`;
-        this.previewContainer = document.createElement('div');
-        this.previewContainer.id = 'IgmePreview';
-        this.previewContainer.style = `display: none; width: 100%; height: 100%; padding: 0; margin: 0;`;
+        if(!previewContainer) this.previewContainer = document.createElement('div');
+        else this.previewContainer = previewContainer;
+        this.previewContainer.classList.add('page-preview-container');
+        //this.previewContainer.id = 'IgmePreview';
+        //this.previewContainer.style = `display: none; width: 100%; height: 100%; padding: 0; margin: 0;`;
+        
         this.mainContainer.appendChild(this.editorContainer);
-        this.mainContainer.appendChild(this.previewContainer);
+        //this.mainContainer.appendChild(this.previewContainer);
 
         // 마크다운 모듈을 설정
         this.md = new MarkdownIt({
@@ -323,9 +326,11 @@ export default class IgnoteMarkdownEditor {
     }
 
     /** 
-     * 에디터에 포커스를 맞춰준다. 
+     * 에디터를 본격적으로 가동한다.
      * */ 
-    focus() {
+    activate() {
+        this.previewContainer.style.display = 'none';
+        this.mainContainer.appendChild(this.previewContainer);
         this.mainEditor.focus();
     }
 
@@ -341,7 +346,6 @@ export default class IgnoteMarkdownEditor {
      * Markdown 미리보기 업데이트
      */
     updatePreview() {
-        const content = this.getValue();
         this.igmePreview.renderMarkdownTextToPreview();
     }
 
