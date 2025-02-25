@@ -358,7 +358,8 @@ export default class IgnoteMarkdownEditor {
      * @returns {string} HTML 문서
      */
     getOutputValue() {
-        return HtmlSanitizer.SanitizeHtml(this.md.render(this.mainEditor.state.doc.toString()));
+        return this.igmePreview.convertImgLinks(HtmlSanitizer.SanitizeHtml(this.md.render(this.mainEditor.state.doc.toString())));
+        // return this.md.render(this.mainEditor.state.doc.toString());
     }
 
     /**
