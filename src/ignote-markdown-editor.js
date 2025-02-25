@@ -124,7 +124,6 @@ export default class IgnoteMarkdownEditor {
         var theme = {
             style: {
                 foreground: "#f4f4f4",
-                background: "#202020",
                 highlightBackground: "#222222",
                 gutterBackground: "#161b22"
             },
