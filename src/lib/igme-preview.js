@@ -43,6 +43,7 @@ class IgmePreview {
      * @param {number} textLineNo
      */
     movePreviewPositionWithEditorPosition(textLineNo) {
+        //console.log('movePreviewPositionWithEditorPosition')
         // 첫줄과 끝줄은 따로 처리한다.
         if (textLineNo === -2 || textLineNo === -1) this.movePreviewPosition(textLineNo);
         else {
@@ -70,6 +71,7 @@ class IgmePreview {
         animate = false,
         reposToEditorTarget = 0,
     ) {
+        //console.log('movePreviewPosition')
         const previewContainer = document.getElementById('IgmePreview');
         // 끝줄로 가면 끝줄 처리를 한다.
         if (linenum == -1) {
@@ -134,7 +136,7 @@ class IgmePreview {
                 } else if (fileType === 'pdf') {
                     // .pdf 파일 → 브라우저 기본 PDF 뷰어
                     // return `<div ${pAttributes} style="height:100%">
-                     return `<div class="external-document" style="height:100%">
+                    return `<div class="external-document" style="height:100%">
                             <iframe src="${fileUrl}" ${cleanedAttributes} width="100%" height="100%" frameborder="0"></iframe>
                         </div>`;
                 } else {
@@ -158,6 +160,7 @@ class IgmePreview {
      * MathJax를 포함한 마크다운을 HTML로 변환해 preview에 표시한다 
      */
     renderMarkdownTextToPreview() {
+        //console.log('renderMarkdownTextToPreview')
         // 변환한다.
         let convertedHTMLText = this.convertImgLinks(HtmlSanitizer.SanitizeHtml(this.parent.getOutputValue()));
         //let convertedHTMLText = this.parent.getOutputValue();

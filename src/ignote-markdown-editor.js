@@ -1,10 +1,12 @@
 
 import { oneDark } from "@codemirror/theme-one-dark";
 import { nord } from "cm6-theme-nord";
-import { EditorView, keymap, highlightActiveLine, dropCursor,
-         rectangularSelection, crosshairCursor,
-         lineNumbers } from "@codemirror/view"
-import { Compartment, StateEffect, EditorState } from "@codemirror/state"
+import {
+    EditorView, keymap, highlightActiveLine, dropCursor,
+    rectangularSelection, crosshairCursor,
+    lineNumbers
+} from "@codemirror/view"
+import { Compartment, StateEffect, EditorState, EditorSelection } from "@codemirror/state"
 import { defaultHighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching, foldKeymap } from "@codemirror/language"
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search"
@@ -193,7 +195,7 @@ export default class IgnoteMarkdownEditor {
 
         this.mainEditorElement = document.querySelector("#IgmeEditor .cm-editor");
 
-        this.updatePreview();
+        this.igmePreview.renderMarkdownTextToPreview();
         this.addEventListeners();
     }
 
@@ -308,6 +310,7 @@ export default class IgnoteMarkdownEditor {
 
     // 현재 커서 위치로 preview를 스크롤한다.
     scrollPreviewAsTextareaCursor(self) {
+        //console.log('scrollPreviewAsTextareaCursor')
         // TODO: 커서위치가 없을 경우 대비도 해야 한다.
         // console.log('scrollPreviewAsTextareaCursor')
         var selection = this.mainEditor.state.selection;
@@ -321,9 +324,17 @@ export default class IgnoteMarkdownEditor {
         return true;
     }
 
+    /**
+      * 에디터를 삭제한다.
+      */
+    destroy() {
+        this.mainEditor.destroy();
+        this.mainContainer.innerHTML = "";
+    }
+
     /** 
      * 에디터에 포커스를 맞춰준다. 
-     * */ 
+     * */
     focus() {
         this.mainEditor.focus();
     }
@@ -340,7 +351,6 @@ export default class IgnoteMarkdownEditor {
      * Markdown 미리보기 업데이트
      */
     updatePreview() {
-        const content = this.getValue();
         this.igmePreview.renderMarkdownTextToPreview();
     }
 
@@ -363,7 +373,7 @@ export default class IgnoteMarkdownEditor {
 
     /**
      * Markdown 설정하기
-     */ 
+     */
     setValue(content) {
         this.mainEditor.dispatch({
             changes: { from: 0, to: this.mainEditor.state.doc.length, insert: content },
@@ -440,11 +450,13 @@ export default class IgnoteMarkdownEditor {
     onScroll(event, view) {
         // preview가 열려 있을 때만 조정한다.
         const scrollTop = document.documentElement.scrollTop || window.pageYOffset;
+        //console.log(this.documentScrolled, documentScrolled, this.mainContainer.style.display);
         if (!this.onPasteInput && !this.arrowKeyDown // 키관련 스크롤은 따로 처리되도록..
             && this.previewEnabled) {
             const line_no = this.getRowFromCoords(this.mouseClientX, this.mouseClientY - scrollTop, this);
             //console.log(`line_no: ${line_no}, x:${this.mouseClientX}, y: ${this.mouseClientY}, scrollTop: ${scrollTop}`)
             this.igmePreview.movePreviewPositionWithEditorPosition(line_no);
+            //this.documentScrolled = documentScrolled;
         }
     }
 
