@@ -27,6 +27,7 @@ import mdiSub from "markdown-it-sub";
 import markdownItImageSize from "./lib/markdown-it-imgsize";
 import markdownitMathjax from "./lib/markdown-it-mathjax";
 import markdownItInjectLineNumbers from "./lib/markdown-it-inject-linenumbers";
+import markdownItHashtag from "./lib/markdown-it-hashtag";
 
 import IgmePreview from "./lib/igme-preview";
 import { getCustomTheme } from "./lib/theme-custom";
@@ -81,7 +82,8 @@ export default class IgnoteMarkdownEditor {
             .use(mdiSup)
             .use(mdiSub)
             .use(markdownItImageSize)
-            .use(markdownItInjectLineNumbers);
+            .use(markdownItInjectLineNumbers)
+            .use(markdownItHashtag);
 
         // $-$, $$-$$를 \(-\), \[-\]과 같은 식으로 바꾼다. (pandoc math규정을 따름)
         if (typeof MathJax !== "undefined") {
@@ -369,6 +371,14 @@ export default class IgnoteMarkdownEditor {
     getOutputValue() {
         return this.igmePreview.convertImgLinks(HtmlSanitizer.SanitizeHtml(this.md.render(this.mainEditor.state.doc.toString())));
         // return this.md.render(this.mainEditor.state.doc.toString());
+    }
+
+    /**
+     * Markdown내 검출된 해시태그를 리턴한다.
+     * @returns 해시태그 리스트 ['첫번째태그', '두번째태그']
+     */
+    getHashtags() {
+        return this.md.getFoundHashtags();
     }
 
     /**
