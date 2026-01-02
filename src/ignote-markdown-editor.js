@@ -39,7 +39,7 @@ import HtmlSanitizer from "./lib/htmlSanitizer";
 const IgnoreUpdateEffect = StateEffect.define();
 
 export default class IgnoteMarkdownEditor {
-    constructor(mainContainer, previewContainer, initialContent = "") {
+    constructor(mainContainerId, initialContent = "") {
 
         this.previewEnabled = false;
         this.resizeTimer = null;
@@ -56,7 +56,8 @@ export default class IgnoteMarkdownEditor {
 
 
         // 컨테이너들을 정리한다.
-        this.mainContainer = mainContainer;
+        this.mainContainer = document.getElementById(mainContainerId);
+        if(this.mainContainer == null) return;
         this.editorContainer = document.createElement('div');
         this.editorContainer.id = 'IgmeEditor';
         this.editorContainer.style = `display: block; width: 100%; height: 100%; padding: 0; margin: 0;`;
@@ -470,4 +471,12 @@ export default class IgnoteMarkdownEditor {
         }
     }
 
+    /**
+     * 현재 선택된 범위 정보를 반환한다.
+     * @returns { from: number, to: number, anchor: number, head: number }
+     */
+    getSelectionRange() {
+        const sel = this.mainEditor.state.selection.main;
+        return { from: sel.from, to: sel.to, anchor: sel.anchor, head: sel.head };
+    }
 }
