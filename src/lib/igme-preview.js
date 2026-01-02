@@ -227,7 +227,7 @@ class IgmePreview {
      * @returns 
      */
     scrollAnimate(element, targetScrollTop = 0, duration = 100) {
-        element.scrollTop = targetScrollTop;
+        if(element) element.scrollTop = targetScrollTop;
         /*if (!element) return;
 
         // 기존 애니메이션 중단
