@@ -371,7 +371,6 @@ export default class IgnoteMarkdownEditor {
      */
     getOutputValue() {
         return this.igmePreview.convertImgLinks(HtmlSanitizer.SanitizeHtml(this.md.render(this.mainEditor.state.doc.toString())));
-        // return this.md.render(this.mainEditor.state.doc.toString());
     }
 
     /**

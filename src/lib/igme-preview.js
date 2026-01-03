@@ -163,6 +163,7 @@ class IgmePreview {
         //console.log('renderMarkdownTextToPreview')
         // 변환한다.
         let convertedHTMLText = this.convertImgLinks(HtmlSanitizer.SanitizeHtml(this.parent.getOutputValue()));
+        //console.log(`convertedHTMLText: ${convertedHTMLText}`);
         //let convertedHTMLText = this.parent.getOutputValue();
         let preview_element = document.getElementById('IgmePreview');
 
